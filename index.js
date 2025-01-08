@@ -2,6 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 /* === Firebase Setup === */
 const firebaseConfig = {
@@ -16,6 +17,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app)
+
+// Initialize Cloud Firestore and get a reference to the service
+const db = getFirestore(app);
+console.log(db)
 
 /* === UI === */
 const signOutButtonEl = document.getElementById("sign-out-btn")
@@ -36,13 +41,16 @@ const createAccountButtonEl = document.getElementById("create-account-btn")
 const userProfilePictureEl = document.getElementById("user-profile-picture")
 const userGreetingEl = document.getElementById("user-greeting")
 
+const textareaEl = document.getElementById("post-input")
+const postButtonEl = document.getElementById("post-btn")
+
 /* == UI - Event Listeners == */
 
 signInWithGoogleButtonEl.addEventListener("click", authSignInWithGoogle)
-
 signInButtonEl.addEventListener("click", authSignInWithEmail)
 createAccountButtonEl.addEventListener("click", authCreateAccountWithEmail)
 signOutButtonEl.addEventListener("click", authSignOut)
+postButtonEl.addEventListener("click", postButtonPressed)
 
 /* === Main Code === */
 
@@ -59,14 +67,6 @@ function authSignInWithGoogle() {
 
 function authSignInWithEmail() {
     console.log("Sign in with email and password")
-    /*  Challenge:
-    1  Import the signInWithEmailAndPassword function from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js"
-    2 Use the code from the documentation to make this function work.
-    3  Make sure to first create two consts, 'email' and 'password', to fetch the values from the input fields emailInputEl and passwordInputEl.
-    4 If the login is successful then you should show the logged in view using showLoggedInView()
-    5   If something went wrong, then you should log the error message using console.error.
-    */
-
     const email = emailInputEl.value 
     const password = passwordInputEl.value
 
@@ -99,14 +99,6 @@ function authSignInWithEmail() {
 
 function authCreateAccountWithEmail() {
     console.log("Sign up with email and password")
-    /*  Challenge:
-    1 Import the createUserWithEmailAndPassword function from from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    2 Use the code from the documentation to make this function work.
-    3 Make sure to first create two consts, 'email' and 'password', to fetch the values from the input fields emailInputEl and passwordInputEl.
-    4 If the creation of user is successful then you should show the logged in view using showLoggedInView()
-    5 If something went wrong, then you should log the error message using console.error.
-    */
-
     const email = emailInputEl.value 
     const password = passwordInputEl.value
     createUserWithEmailAndPassword(auth, email, password)
@@ -120,12 +112,6 @@ function authCreateAccountWithEmail() {
 }
 
 function authSignOut() {
-    /*  Challenge:
-    Import the signOut function from 'firebase/auth'
-    Use the code from the documentation to make this function work.
-    If the log out is successful then you should show the logged out view using showLoggedOutView() 
-    If something went wrong, then you should log the error message using console.error.
-    */
    signOut(auth)
     .then(() => {
         showLoggedOutView()
@@ -168,7 +154,19 @@ function showUserGreeting(element, user) {
     }
  }
 
-
+async function addPostToDB(postBody, user) {
+    try {
+        const docRef = await addDoc(collection(db, "posts"), {
+            body: postBody,
+            uid: user.uid,
+            createdAt: serverTimestamp()
+        })
+        console.log("Document written with ID:", docRef.id);
+    } catch(e) {
+        console.error("Error Adding Document:", e)
+    }
+ }
+ 
 /* == Functions - UI Functions == */
 
 function showLoggedOutView() {
@@ -191,5 +189,16 @@ function showLoggedOutView() {
  function hideView(view) {
     view.style.display = "none"
  }
+
  
+
+ function postButtonPressed() {
+    const postBody = textareaEl.value
+    const user = auth.currentUser
+   
+    if (postBody) {
+        addPostToDB(postBody, user)
+        textareaEl.value = ""
+    }
+}    
 //credit: coursera
