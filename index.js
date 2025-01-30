@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 /* === Firebase Setup === */
 const firebaseConfig = {
@@ -57,8 +57,6 @@ postButtonEl.addEventListener("click", postButtonPressed)
 showLoggedOutView()
 signedInOrNot()
 
-/* === Functions === */
-
 /* = Functions - Firebase - Authentication = */
 
 function authSignInWithGoogle() {
@@ -72,21 +70,6 @@ function authSignInWithEmail() {
 
     signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
-            // sendEmailVerification(auth.currentUser)
-            //     .then(() => {
-            //         console.log("Verification Email has been sent!")
-            //         const interval = setInterval(() => {
-            //             auth.currentUser.reload().then(() => {
-            //                 if (userCredential.user.emailVerified) {
-            //                     clearInterval(interval)
-            //                     console.log("Successfully Verified!")
-            //                     showLoggedInView()
-            //                     showProfilePicture(userProfilePictureEl, user)
-            //                     showUserGreeting(userGreetingEl, user)
-            //                 }
-            //             })
-            //         }, 2000)               
-            //     })
             showLoggedInView()
             showProfilePicture(userProfilePictureEl, auth.currentUser)
             showUserGreeting(userGreetingEl, auth.currentUser)
@@ -125,13 +108,15 @@ function authSignOut() {
  function signedInOrNot() {
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            showLoggedInView()
-            showProfilePicture(userProfilePictureEl, auth.currentUser)
-            showUserGreeting(userGreetingEl, auth.currentUser)
+          showLoggedInView()
+          showProfilePicture(userProfilePictureEl, user)
+          showUserGreeting(userGreetingEl, user)
+          fetchInRealtimeAndRenderPostsFromDB()
         } else {
-            showLoggedOutView()
+          showLoggedOutView()
+          fetchInRealtimeAndRenderPostsFromDB()
         }
-    })
+    }) 
 }
 
 function showProfilePicture(imgElement, user) {
@@ -166,6 +151,16 @@ async function addPostToDB(postBody, user) {
         console.error("Error Adding Document:", e)
     }
  }
+
+ function fetchInRealtimeAndRenderPostsFromDB() {
+    onSnapshot(collection(db, "posts"), (querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+        // we are getting the posts in the console only for now
+            console.log(doc.data())
+        })
+    })
+ }
+ 
  
 /* == Functions - UI Functions == */
 
